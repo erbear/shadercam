@@ -203,6 +203,9 @@ public class CameraRenderer extends Thread implements SurfaceTexture.OnFrameAvai
      */
     private boolean mIsRecording = false;
 
+    public boolean attmemptToStopRecorder = false;
+    public boolean glInitialized = false;
+
     /**
      * Reference to our users CameraFragment to ease setting viewport size. Thought about decoupling but wasn't
      * worth the listener/callback hastle
@@ -313,6 +316,20 @@ public class CameraRenderer extends Thread implements SurfaceTexture.OnFrameAvai
                 mViewportHeight = viewportHeight;
             }
         });
+
+        mCameraFragment.setmOnCameraStateListener(new CameraFragment.OnCameraStateListener() {
+            @Override
+            public void onCameraClose() {
+                if (attmemptToStopRecorder){
+                    Log.d("TODE", " should close recorder");
+                    if (glInitialized){
+                        deinitGL();
+                        mOnRendererReadyListener.onRendererFinished();
+                    }
+                    attmemptToStopRecorder = false;
+                }
+            }
+        });
     }
 
     private void loadFromShadersFromAssets(String pathToFragment, String pathToVertex)
@@ -404,7 +421,7 @@ public class CameraRenderer extends Thread implements SurfaceTexture.OnFrameAvai
             Log.e(TAG, "MediaRecorder failed on prepare() " + e.getMessage());
         }
 
-        Log.d(TAG, "MediaRecorder surface: " + mMediaRecorder.getSurface() + " isValid: " + mMediaRecorder.getSurface().isValid());
+        Log.d(TAG, " TODE MediaRecorder surface: " + mMediaRecorder.getSurface() + " isValid: " + mMediaRecorder.getSurface().isValid());
     }
 
     /**
@@ -412,16 +429,19 @@ public class CameraRenderer extends Thread implements SurfaceTexture.OnFrameAvai
      * the preview as well as the surface that will be used by MediaRecorder for recording
      */
     public void initGL() {
-        mEglCore = new EglCore(null, EglCore.FLAG_RECORDABLE | EglCore.FLAG_TRY_GLES3);
+        if (!glInitialized) {
+            mEglCore = new EglCore(null, EglCore.FLAG_RECORDABLE | EglCore.FLAG_TRY_GLES3);
 
-        //create preview surface
-        mWindowSurface = new WindowSurface(mEglCore, mSurfaceTexture);
-        mWindowSurface.makeCurrent();
+            //create preview surface
+            mWindowSurface = new WindowSurface(mEglCore, mSurfaceTexture);
+            mWindowSurface.makeCurrent();
 
-        //create recording surface
-        mRecordSurface = new WindowSurface(mEglCore, mMediaRecorder.getSurface(), false);
+            //create recording surface
+            mRecordSurface = new WindowSurface(mEglCore, mMediaRecorder.getSurface(), false);
 
-        initGLComponents();
+            initGLComponents();
+            glInitialized = true;
+        }
     }
 
     protected void initGLComponents() {
@@ -441,15 +461,18 @@ public class CameraRenderer extends Thread implements SurfaceTexture.OnFrameAvai
     // ------------------------------------------------------------
 
     public void deinitGL() {
-        deinitGLComponents();
+        if (glInitialized){
+            deinitGLComponents();
 
-        mWindowSurface.release();
-        mRecordSurface.release();
+            mWindowSurface.release();
+            mRecordSurface.release();
 
-        mEglCore.release();
+            mEglCore.release();
 
-        if(mMediaRecorder != null)
-            mMediaRecorder.release();
+            if(mMediaRecorder != null)
+                mMediaRecorder.release();
+            glInitialized = false;
+        }
     }
 
     protected void deinitGLComponents() {
@@ -574,16 +597,23 @@ public class CameraRenderer extends Thread implements SurfaceTexture.OnFrameAvai
     @Override
     public void run()
     {
+
+        Log.d("TODE ", "Looper prepare");
         Looper.prepare();
 
         //create handler for communication from UI
         mHandler = new RenderHandler(this);
 
+        Log.d("TODE ", "Handler created");
         //initialize all GL on this context
         initGL();
+        Log.d("TODE ", "Init gl");
 
+        Log.d("TODE ", "starting looping");
         //LOOOOOOOOOOOOOOOOP
         Looper.loop();
+
+        Log.d("TODE ", "Looping finished");
 
         //we're done here
         deinitGL();
@@ -597,6 +627,8 @@ public class CameraRenderer extends Thread implements SurfaceTexture.OnFrameAvai
      * this should only be called from our handler to ensure thread-safe
      */
     public void shutdown() {
+
+        Log.d("TODE ", "shutdown function started");
         synchronized (this) {
             if (mIsRecording)
                 stopRecording();
@@ -878,14 +910,36 @@ public class CameraRenderer extends Thread implements SurfaceTexture.OnFrameAvai
      * stops our mediarecorder if its still running and starts our copy from temp to regular
      */
     public void stopRecording() {
+
+        Log.d("TODE ", "stop recording happening");
         synchronized (this) {
             if(!mIsRecording)
                 return;
 
-            mMediaRecorder.stop();
-            mMediaRecorder.release();
+
+            Log.d("TODE ", "BEFORE stop");
+            Log.d("TODE camera status: ", Boolean.toString(mCameraFragment.mCameraIsOpen));
+            int h = mRecordSurface.getHeight();
+            int w = mRecordSurface.getWidth();
+
+
+            Log.d("TODE recordSurface ", "height: " + Integer.toString(h) + " widht: " + Integer.toString(w));
+
 
             mIsRecording = false;
+            attmemptToStopRecorder = true;
+            try {
+                mMediaRecorder.stop();
+                mMediaRecorder.release();
+            } catch (RuntimeException ex){
+                //TODO delete file
+                Log.d("TODE ", "DELETE FILE");
+                return;
+            }
+            attmemptToStopRecorder = false;
+
+
+            Log.d("TODE ", "AFTER stop");
 
             try {
                 copyFile(mTempOutputFile, mOutputFile);
@@ -974,12 +1028,15 @@ public class CameraRenderer extends Thread implements SurfaceTexture.OnFrameAvai
          * Call from UI thread.
          */
         public void sendShutdown() {
+
+            Log.d("TODE ", "sending SHUTDOWN");
             sendMessage(obtainMessage(RenderHandler.MSG_SHUTDOWN));
         }
 
         @Override
         public void handleMessage(Message msg)
         {
+            Log.d("TODE ", "Handling message");
             CameraRenderer renderer = mWeakRenderer.get();
             if (renderer == null) {
                 Log.w(TAG, "RenderHandler.handleMessage: weak ref is null");

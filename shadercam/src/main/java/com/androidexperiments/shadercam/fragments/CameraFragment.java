@@ -113,6 +113,7 @@ public class CameraFragment extends Fragment {
      * Listener for when openCamera is called and a proper video size is created
      */
     private OnViewportSizeUpdatedListener mOnViewportSizeUpdatedListener;
+    private OnCameraStateListener mOnCameraStateListener;
 
     private float mVideoSizeAspectRatio;
     private float mPreviewSurfaceAspectRatio;
@@ -122,7 +123,7 @@ public class CameraFragment extends Fragment {
      */
     private Semaphore mCameraOpenCloseLock = new Semaphore(1);
 
-    private boolean mCameraIsOpen = false;
+    public boolean mCameraIsOpen = false;
 
     /**
      * Get instance of this fragment that sets retain instance true so it is not affected
@@ -232,7 +233,7 @@ public class CameraFragment extends Fragment {
             //send back for updates to renderer if needed
             updateViewportSize(mVideoSizeAspectRatio, mPreviewSurfaceAspectRatio);
 
-            Log.i(TAG, "openCamera() videoSize: " + mVideoSize + " previewSize: " + mPreviewSize);
+            Log.i(TAG, "TODE openCamera() videoSize: " + mVideoSize + " previewSize: " + mPreviewSize);
 
             manager.openCamera(cameraId, mStateCallback, null);
         }
@@ -295,6 +296,7 @@ public class CameraFragment extends Fragment {
 
         @Override
         public void onOpened(CameraDevice cameraDevice) {
+            Log.d("TODE ", "Camara Opening");
             mCameraOpenCloseLock.release();
             mCameraDevice = cameraDevice;
             mCameraIsOpen = true;
@@ -308,6 +310,7 @@ public class CameraFragment extends Fragment {
 
         @Override
         public void onDisconnected(CameraDevice cameraDevice) {
+            Log.d("TODE ", "Camera disconnected");
             mCameraOpenCloseLock.release();
             cameraDevice.close();
             mCameraDevice = null;
@@ -317,6 +320,7 @@ public class CameraFragment extends Fragment {
         @Override
         public void onError(CameraDevice cameraDevice, int error) {
             mCameraOpenCloseLock.release();
+            Log.d("TODE ", "Camera Error");
             cameraDevice.close();
             mCameraDevice = null;
             mCameraIsOpen = false;
@@ -327,6 +331,13 @@ public class CameraFragment extends Fragment {
             if (null != activity) {
                 activity.finish();
             }
+        }
+
+        @Override
+        public void onClosed(CameraDevice camera) {
+            Log.d("TODE ", "Camera Closing");
+            mOnCameraStateListener.onCameraClose();
+            super.onClosed(camera);
         }
     };
 
@@ -583,6 +594,10 @@ public class CameraFragment extends Fragment {
         this.mOnViewportSizeUpdatedListener = listener;
     }
 
+    public void setmOnCameraStateListener(OnCameraStateListener listener) {
+        this.mOnCameraStateListener = listener;
+    }
+
     /**
      * Listener interface that will send back the newly created {@link Size} of our camera output
      */
@@ -610,5 +625,8 @@ public class CameraFragment extends Fragment {
                     .create();
         }
 
+    }
+    public interface OnCameraStateListener {
+        void onCameraClose();
     }
 }

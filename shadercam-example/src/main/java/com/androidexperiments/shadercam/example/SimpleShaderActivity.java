@@ -217,6 +217,8 @@ public class SimpleShaderActivity extends FragmentActivity implements CameraRend
         mRenderer = getRenderer(surface, width, height);
         mRenderer.setCameraFragment(mCameraFragment);
         mRenderer.setOnRendererReadyListener(this);
+
+        Log.d("TODE ", "setReady and start");
         mRenderer.start();
 
         //initial config if needed
@@ -228,7 +230,7 @@ public class SimpleShaderActivity extends FragmentActivity implements CameraRend
      * recording with any shader.
      */
     protected CameraRenderer getRenderer(SurfaceTexture surface, int width, int height) {
-        return new ExampleRenderer(this, surface, width, height);
+        return new CameraRenderer(this, surface, width, height);
     }
 
     private void startRecording()
@@ -239,9 +241,12 @@ public class SimpleShaderActivity extends FragmentActivity implements CameraRend
 
     private void stopRecording()
     {
-        mRenderer.stopRecording();
+
+        Log.d("TODE ", "stop recording about to happen");
+//        mRenderer.stopRecording();
         mRecordBtn.setText("Record");
 
+        Log.d("TODE ", "ZAMYKAM KAMERE");
         //restart so surface is recreated
         shutdownCamera(true);
 
@@ -259,16 +264,17 @@ public class SimpleShaderActivity extends FragmentActivity implements CameraRend
      */
     private void shutdownCamera(boolean restart)
     {
+
+        Log.d("TODE ", "shutdownCamera function");
         //make sure we're here in a working state with proper permissions when we kill the camera
         if(PermissionsHelper.isMorHigher() && !mPermissionsSatisfied) return;
 
         //check to make sure we've even created the cam and renderer yet
         if(mCameraFragment == null || mRenderer == null) return;
 
-        mCameraFragment.closeCamera();
-
         mRestartCamera = restart;
         mRenderer.getRenderHandler().sendShutdown();
+        mCameraFragment.closeCamera();
         mRenderer = null;
     }
 
@@ -297,6 +303,7 @@ public class SimpleShaderActivity extends FragmentActivity implements CameraRend
         runOnUiThread(new Runnable() {
             @Override
             public void run() {
+                Log.d("TODE onRendererFinished", Boolean.toString(mRestartCamera));
                 if (mRestartCamera) {
                     setReady(mTextureView.getSurfaceTexture(), mTextureView.getWidth(), mTextureView.getHeight());
                     mRestartCamera = false;
