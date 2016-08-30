@@ -2,6 +2,7 @@ package com.androidexperiments.shadercam.example;
 
 import android.Manifest;
 import android.graphics.SurfaceTexture;
+import android.media.MediaRecorder;
 import android.os.Bundle;
 import android.os.Environment;
 import android.support.v4.app.FragmentActivity;
@@ -40,6 +41,7 @@ public class SimpleShaderActivity extends FragmentActivity implements CameraRend
      * filename for our test video output
      */
     private static final String TEST_VIDEO_FILE_NAME = "test_video.mp4";
+    public MediaRecorder mMediaRecorder;
 
     /**
      * We inject our views from our layout xml here using {@link ButterKnife}
@@ -80,6 +82,25 @@ public class SimpleShaderActivity extends FragmentActivity implements CameraRend
         //setup permissions for M or start normally
         if(PermissionsHelper.isMorHigher())
             setupPermissions();
+
+        mMediaRecorder = new MediaRecorder();
+        mMediaRecorder.setOnErrorListener(new MediaRecorder.OnErrorListener() {
+            @Override
+            public void onError(MediaRecorder mediaRecorder, int i, int i1) {
+                Log.d("TODU MREC", "ERROR");
+            }
+        });
+        mMediaRecorder.setOnInfoListener(new MediaRecorder.OnInfoListener() {
+            @Override
+            public void onInfo(MediaRecorder mediaRecorder, int i, int i1) {
+                Log.d("TODU MREC", "INFO value: " + Integer.toString(i) + " specyfic: " + Integer.toString(i1));
+                if (i == 536871912){
+                    Log.d("TODU force stop", "");
+                    mediaRecorder.reset();
+                    mediaRecorder.release();
+                }
+            }
+        });
     }
 
     private void setupPermissions() {
@@ -230,7 +251,7 @@ public class SimpleShaderActivity extends FragmentActivity implements CameraRend
      * recording with any shader.
      */
     protected CameraRenderer getRenderer(SurfaceTexture surface, int width, int height) {
-        return new CameraRenderer(this, surface, width, height);
+        return new CameraRenderer(this, surface, width, height, mMediaRecorder);
     }
 
     private void startRecording()

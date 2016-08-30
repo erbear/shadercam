@@ -2,6 +2,7 @@ package com.androidexperiments.shadercam.example.gl;
 
 import android.content.Context;
 import android.graphics.SurfaceTexture;
+import android.media.MediaRecorder;
 import android.opengl.GLES20;
 import android.os.SystemClock;
 
@@ -15,8 +16,8 @@ import com.androidexperiments.shadercam.gl.CameraRenderer;
 public class SuperAwesomeRenderer extends CameraRenderer {
     private float mTileAmount = 1.f;
 
-    public SuperAwesomeRenderer(Context context, SurfaceTexture texture, int width, int height) {
-        super(context, texture, width, height, "superawesome.frag.glsl", "superawesome.vert.glsl");
+    public SuperAwesomeRenderer(Context context, SurfaceTexture texture, int width, int height, MediaRecorder mediaRecorder) {
+        super(context, texture, width, height, "superawesome.frag.glsl", "superawesome.vert.glsl", mediaRecorder);
     }
 
     @Override

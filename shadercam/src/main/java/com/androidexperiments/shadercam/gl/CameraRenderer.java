@@ -13,6 +13,7 @@ import android.opengl.GLUtils;
 import android.os.Handler;
 import android.os.Looper;
 import android.os.Message;
+import android.provider.MediaStore;
 import android.util.Log;
 import android.util.SparseIntArray;
 import android.view.Surface;
@@ -261,9 +262,9 @@ public class CameraRenderer extends Thread implements SurfaceTexture.OnFrameAvai
     /**
      * Simple ctor to use default shaders
      */
-    public CameraRenderer(Context context, SurfaceTexture texture, int width, int height)
+    public CameraRenderer(Context context, SurfaceTexture texture, int width, int height, MediaRecorder recorderInstance)
     {
-        init(context, texture, width, height, DEFAULT_FRAGMENT_SHADER, DEFAULT_VERTEX_SHADER);
+        init(context, texture, width, height, DEFAULT_FRAGMENT_SHADER, DEFAULT_VERTEX_SHADER, recorderInstance);
     }
 
     /**
@@ -272,13 +273,14 @@ public class CameraRenderer extends Thread implements SurfaceTexture.OnFrameAvai
      * @param fragPath the file name of your fragment shader, ex: "lip_service.frag" if it is top-level /assets/ folder. Add subdirectories if needed
      * @param vertPath the file name of your vertex shader, ex: "lip_service.vert" if it is top-level /assets/ folder. Add subdirectories if needed
      */
-    public CameraRenderer(Context context, SurfaceTexture texture, int width, int height, String fragPath, String vertPath)
+    public CameraRenderer(Context context, SurfaceTexture texture, int width, int height, String fragPath, String vertPath, MediaRecorder recorderInstance)
     {
-        init(context, texture, width, height, fragPath, vertPath);
+        init(context, texture, width, height, fragPath, vertPath, recorderInstance);
     }
 
-    private void init(Context context, SurfaceTexture texture, int width, int height, String fragPath, String vertPath)
+    private void init(Context context, SurfaceTexture texture, int width, int height, String fragPath, String vertPath, MediaRecorder recorderInstance)
     {
+        this.mMediaRecorder = recorderInstance;
         this.setName(THREAD_NAME);
 
         this.mContext = context;
@@ -322,11 +324,13 @@ public class CameraRenderer extends Thread implements SurfaceTexture.OnFrameAvai
             public void onCameraClose() {
                 if (attmemptToStopRecorder){
                     Log.d("TODE", " should close recorder");
-                    if (glInitialized){
-                        deinitGL();
-                        mOnRendererReadyListener.onRendererFinished();
-                    }
-                    attmemptToStopRecorder = false;
+                    mMediaRecorder.stop();
+                    Log.d("TODE", " stopped again");
+//                    if (glInitialized){
+//                        deinitGL();
+//                        mOnRendererReadyListener.onRendererFinished();
+//                    }
+//                    attmemptToStopRecorder = false;
                 }
             }
         });
@@ -356,8 +360,6 @@ public class CameraRenderer extends Thread implements SurfaceTexture.OnFrameAvai
         } catch (IOException e) {
             throw new RuntimeException("Temp file could not be created. Message: " + e.getMessage());
         }
-
-        mMediaRecorder = new MediaRecorder();
 
         //set the sources
         /**
@@ -469,8 +471,6 @@ public class CameraRenderer extends Thread implements SurfaceTexture.OnFrameAvai
 
             mEglCore.release();
 
-            if(mMediaRecorder != null)
-                mMediaRecorder.release();
             glInitialized = false;
         }
     }
@@ -633,7 +633,7 @@ public class CameraRenderer extends Thread implements SurfaceTexture.OnFrameAvai
             if (mIsRecording)
                 stopRecording();
             else //not recording but still needs release
-                mMediaRecorder.release();
+                mMediaRecorder.reset();
         }
 
         //kill ouy thread
@@ -929,8 +929,18 @@ public class CameraRenderer extends Thread implements SurfaceTexture.OnFrameAvai
             mIsRecording = false;
             attmemptToStopRecorder = true;
             try {
+                if (glInitialized){
+
+                    mWindowSurface.release();
+                    mRecordSurface.release();
+
+                    mEglCore.release();
+
+                    glInitialized = false;
+                }
+
                 mMediaRecorder.stop();
-                mMediaRecorder.release();
+                mMediaRecorder.reset();
             } catch (RuntimeException ex){
                 //TODO delete file
                 Log.d("TODE ", "DELETE FILE");

@@ -1,6 +1,7 @@
 package com.androidexperiments.shadercam.example;
 
 import android.graphics.SurfaceTexture;
+import android.media.MediaRecorder;
 import android.os.Bundle;
 import android.widget.SeekBar;
 
@@ -14,6 +15,7 @@ import com.androidexperiments.shadercam.gl.CameraRenderer;
 public class MeetupActivity extends SimpleShaderActivity implements SeekBar.OnSeekBarChangeListener {
     private SuperAwesomeRenderer mMyRenderer;
     private SeekBar mSeekbar;
+    public MediaRecorder mMediaRecorder;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -21,11 +23,13 @@ public class MeetupActivity extends SimpleShaderActivity implements SeekBar.OnSe
 
         mSeekbar = (SeekBar) findViewById(R.id.seek_bar);
         mSeekbar.setOnSeekBarChangeListener(this);
+
+        mMediaRecorder = new MediaRecorder();
     }
 
     @Override
     protected CameraRenderer getRenderer(SurfaceTexture surface, int width, int height) {
-        mMyRenderer = new SuperAwesomeRenderer(this, surface, width, height);
+        mMyRenderer = new SuperAwesomeRenderer(this, surface, width, height, mMediaRecorder);
         return mMyRenderer;
     }
 
