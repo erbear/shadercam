@@ -84,12 +84,16 @@ public class SimpleShaderActivity extends FragmentActivity implements CameraRend
             setupPermissions();
 
         mMediaRecorder = new MediaRecorder();
+
+        // for expeted errors
         mMediaRecorder.setOnErrorListener(new MediaRecorder.OnErrorListener() {
             @Override
             public void onError(MediaRecorder mediaRecorder, int i, int i1) {
                 Log.d("TODU MREC", "ERROR");
             }
         });
+
+        // for unexpeted errors
         mMediaRecorder.setOnInfoListener(new MediaRecorder.OnInfoListener() {
             @Override
             public void onInfo(MediaRecorder mediaRecorder, int i, int i1) {
@@ -251,7 +255,7 @@ public class SimpleShaderActivity extends FragmentActivity implements CameraRend
      * recording with any shader.
      */
     protected CameraRenderer getRenderer(SurfaceTexture surface, int width, int height) {
-        return new CameraRenderer(this, surface, width, height, mMediaRecorder);
+        return new ExampleRenderer(this, surface, width, height, mMediaRecorder);
     }
 
     private void startRecording()

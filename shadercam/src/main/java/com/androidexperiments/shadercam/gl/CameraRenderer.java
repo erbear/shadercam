@@ -326,11 +326,7 @@ public class CameraRenderer extends Thread implements SurfaceTexture.OnFrameAvai
                     Log.d("TODE", " should close recorder");
                     mMediaRecorder.stop();
                     Log.d("TODE", " stopped again");
-//                    if (glInitialized){
-//                        deinitGL();
-//                        mOnRendererReadyListener.onRendererFinished();
-//                    }
-//                    attmemptToStopRecorder = false;
+                    attmemptToStopRecorder = false;
                 }
             }
         });
@@ -466,13 +462,17 @@ public class CameraRenderer extends Thread implements SurfaceTexture.OnFrameAvai
         if (glInitialized){
             deinitGLComponents();
 
-            mWindowSurface.release();
-            mRecordSurface.release();
-
-            mEglCore.release();
+            releaseComponents();
 
             glInitialized = false;
         }
+    }
+
+    public void releaseComponents(){
+        mWindowSurface.release();
+        mRecordSurface.release();
+
+        mEglCore.release();
     }
 
     protected void deinitGLComponents() {
@@ -929,15 +929,7 @@ public class CameraRenderer extends Thread implements SurfaceTexture.OnFrameAvai
             mIsRecording = false;
             attmemptToStopRecorder = true;
             try {
-                if (glInitialized){
-
-                    mWindowSurface.release();
-                    mRecordSurface.release();
-
-                    mEglCore.release();
-
-                    glInitialized = false;
-                }
+                releaseComponents();
 
                 mMediaRecorder.stop();
                 mMediaRecorder.reset();
